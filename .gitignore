@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+dummy_loan_package.pdf
