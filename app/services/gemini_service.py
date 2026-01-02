@@ -46,23 +46,63 @@ class GeminiService:
               "confidence": 0.95,
               "fields": {{ ... }}
             }}
+            
+            IMPORTANT: Extract ONLY the values. Do not reproduce the standard form text or legal disclaimers.
             """
             
             try:
                 # Use generate_content_async
+                from google.generativeai.types import HarmCategory, HarmBlockThreshold
+                
+                safety_settings = {
+                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                }
+                
                 response = await self.model.generate_content_async(
-                    [prompt, {"mime_type": "image/png", "data": img_data}]
+                    [prompt, {"mime_type": "image/png", "data": img_data}],
+                    safety_settings=safety_settings,
+                    generation_config={"response_mime_type": "application/json"}
                 )
                 
                 text = response.text
-                json_start = text.find('{')
-                json_end = text.rfind('}') + 1
-                if json_start != -1 and json_end != -1:
-                    json_str = text[json_start:json_end]
-                    return json.loads(json_str)
-                else:
-                    return {"error": "No JSON found"}
+                # With JSON mode, response.text should be valid JSON directly
+                return json.loads(text)
             except Exception as e:
+                # Fallback for parsing if needed or handle other errors
+                if "finish_reason" in str(e) and "5" in str(e):
+                    # Recitation Error: Try fallback to just classify doc_type without extraction
+                    self.logger.warning(f"Recitation error on page {page_num}. Retrying with classification only.")
+                    try:
+                        fallback_prompt = """
+                        Classify this document image into one of the following types:
+                        Tax: Form1040, Form1065, Form1120S, W2, 1099-MISC, ScheduleC, K1
+                        Appraisal: Fannie1004, Freddie70, Desktop, DriveBy, URAR
+                        Credit: TriMerge, MergedInFile, Equifax, TransUnion, Experian
+                        Income: Paystub, PensionVerification, ProfitLoss, BankStatement
+                        Title/Escrow: ALTA_Commitment, Preliminary_Title, HUD1, ClosingDisclosure
+                        Loan: MortgageStatement, Note, BorrowerAuthorization
+                        Govt/Military: VA_Certificate, DD214, COE
+                        Misc: Continuation, CoverLetter, Illegible, Blank
+
+                        Output format (JSON only):
+                        {
+                          "doc_type": "SpecificTypeFromListAbove",
+                          "fields": {}
+                        }
+                        Do not extract any text content.
+                        """
+                        response = await self.model.generate_content_async(
+                            [fallback_prompt, {"mime_type": "image/png", "data": img_data}],
+                            safety_settings=safety_settings,
+                            generation_config={"response_mime_type": "application/json"}
+                        )
+                        return json.loads(response.text)
+                    except Exception as fallback_e:
+                         return {"error": f"Recitation Error (Blocked) and Fallback Failed: {str(fallback_e)}"}
+                
                 return {"error": str(e)}
 
     async def process_document_async(self, file_content: bytes, filename: str = "document.pdf") -> ExtractionResult:

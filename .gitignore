@@ -4,3 +4,4 @@ __pycache__/
 .env
 .DS_Store
 dummy_loan_package.pdf
+sampledoc
