@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const jsonCode = document.getElementById('jsonCode');
     const emptyState = document.querySelector('.empty-state');
     const processingTime = document.getElementById('processingTime');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    let currentJsonData = null;
 
     // Drag & Drop
     uploadZone.addEventListener('click', () => fileInput.click());
@@ -40,6 +43,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closePdfBtn.addEventListener('click', () => {
         resetUI();
+    });
+
+    downloadBtn.addEventListener('click', () => {
+        if (!currentJsonData) return;
+
+        const dataStr = JSON.stringify(currentJsonData, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `extraction_result_${Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     });
 
     function handleFile(file) {
@@ -86,8 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             // Format JSON
+            currentJsonData = data;
             jsonCode.textContent = JSON.stringify(data, null, 2);
             jsonViewer.classList.remove('hidden');
+            downloadBtn.classList.remove('hidden');
 
             const duration = ((Date.now() - startTime) / 1000).toFixed(2);
             processingTime.textContent = `Processed in ${duration}s`;
@@ -109,6 +130,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         emptyState.classList.remove('hidden');
         jsonViewer.classList.add('hidden');
+        downloadBtn.classList.add('hidden');
         processingTime.textContent = '';
+        currentJsonData = null;
     }
 });

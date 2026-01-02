@@ -36,7 +36,8 @@ async def reproduce():
                 print(f"Page {page_num + 1} Failed: {result['error']}")
             else:
                 print(f"Page {page_num + 1} Success!")
-                print(result)
+                print(f"Confidence: {result.get('confidence')}")
+                # print(result)
             
         except Exception as e:
             print(f"Exception on page {page_num + 1}: {e}")

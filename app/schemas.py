@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Optional
 class PageData(BaseModel):
     page_num: int
     doc_type: str
+    confidence: Optional[float] = 0.0
     fields: Dict[str, Any]
 
 class ExtractionResult(BaseModel):

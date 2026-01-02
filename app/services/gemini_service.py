@@ -90,6 +90,7 @@ class GeminiService:
                         Output format (JSON only):
                         {
                           "doc_type": "SpecificTypeFromListAbove",
+                          "confidence": 0.95,
                           "fields": {}
                         }
                         Do not extract any text content.
@@ -137,12 +138,22 @@ class GeminiService:
                 pages_data.append(PageData(
                     page_num=page_num,
                     doc_type=result.get("doc_type", "Unknown"),
+                    confidence=result.get("confidence", 0.0),
                     fields=result.get("fields", {})
                 ))
 
+        # Calculate average confidence
+        if pages_data:
+            total_confidence = sum(p.confidence for p in pages_data)
+            avg_confidence = total_confidence / len(pages_data)
+            # Round to 2 decimal places
+            avg_confidence = round(avg_confidence, 2)
+        else:
+            avg_confidence = 0.0
+
         return ExtractionResult(
             doc_type="Mixed", 
-            confidence=0.9, 
+            confidence=avg_confidence, 
             pages=pages_data,
             validation=validation_warnings
         )
