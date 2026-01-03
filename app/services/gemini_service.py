@@ -22,6 +22,7 @@ class GeminiService:
         self.model = genai.GenerativeModel("gemini-2.5-flash")
         # Semaphore to limit concurrent requests (e.g., 5-10) to avoid rate limits
         self.semaphore = asyncio.Semaphore(5)
+        # Using root logger or specific logger module
         self.logger = logging.getLogger(__name__)
 
     async def process_page_async(self, page_num: int, img_data: bytes) -> Dict[str, Any]:
