@@ -10,49 +10,73 @@ from typing import List, Dict, Any, Optional
 
 load_dotenv()
 from app.schemas import ExtractionResult, PageData
+from app.services.training_service import TrainingService
 
 class GeminiService:
-    def __init__(self):
+    def __init__(self, training_service: TrainingService = None):
         api_key = os.environ.get("GOOGLE_API_KEY")
         if not api_key:
             print("Warning: GOOGLE_API_KEY not found in environment variables.")
         
-        genai.configure(api_key=api_key)
         genai.configure(api_key=api_key)
         self.model = genai.GenerativeModel("gemini-2.5-flash")
         # Semaphore to limit concurrent requests (e.g., 5-10) to avoid rate limits
         self.semaphore = asyncio.Semaphore(5)
         # Using root logger or specific logger module
         self.logger = logging.getLogger(__name__)
+        
+        # Inject or instantiate TrainingService
+        self.training_service = training_service or TrainingService()
+
+    def _build_classification_prompt(self, page_num: int) -> str:
+        """Constructs the classification and extraction prompt dynamically from config."""
+        
+        configs = self.training_service.get_all_configs()
+        
+        # Build the dynamic parts of the prompt
+        classification_rules = []
+        for config in configs:
+            doc_type = config.get("doc_type")
+            keywords = ", ".join(config.get("keywords", []))
+            anti_keywords = ", ".join(config.get("anti_keywords", []))
+            classification_rules.append(
+                f"- **{doc_type}**: Look for keywords: [{keywords}]. Ensure these are ABSENT: [{anti_keywords}]."
+            )
+            
+        rules_text = "\n".join(classification_rules)
+        
+        # Add standard types as fallback/simulated for now if needed, or just rely on the dynamic ones + "Unknown"
+        # For this demo, we can mix them or prioritize the dynamic ones.
+        
+        prompt = f"""
+        Analyze this document page (page {page_num}) and extract structured data.
+        
+        ### Classification Rules
+        Determine the document type based on the following rules:
+        {rules_text}
+        - **Other**: If the document does not match any of the above strict criteria.
+        
+        ### Extraction Rules
+        If the document matches one of the types above, extract the fields defined for it.
+        
+        Output valid JSON only:
+        {{
+          "doc_type": "TheMatchedDocType",
+          "confidence": 0.95,
+          "fields": {{
+             // Extract fields relevant to the doc_type.
+             // For CreditReport: credit_score, report_date, borrower_name, total_debt
+             // For PurchaseContract: purchase_price, property_address, closing_date, buyer_name, seller_name
+          }}
+        }}
+        """
+        return prompt
 
     async def process_page_async(self, page_num: int, img_data: bytes) -> Dict[str, Any]:
         async with self.semaphore:
-            prompt = f"""
-            Classify this mortgage document page (page {page_num}) and extract fields as JSON.
-            
-            Strictly classify the document into one of the following specific types (return the specific type name, e.g., "Fannie1004", "Form1040"):
-
-            Tax: Form1040, Form1065, Form1120S, W2, 1099-MISC, ScheduleC, K1
-            Appraisal: Fannie1004, Freddie70, Desktop, DriveBy, URAR
-            Credit: TriMerge, MergedInFile, Equifax, TransUnion, Experian
-            Income: Paystub, PensionVerification, ProfitLoss, BankStatement
-            Title/Escrow: ALTA_Commitment, Preliminary_Title, HUD1, ClosingDisclosure
-            Loan: MortgageStatement, Note, BorrowerAuthorization
-            Govt/Military: VA_Certificate, DD214, COE
-            Misc: Continuation, CoverLetter, Illegible, Blank
-
-            Output format (JSON only):
-            {{
-              "doc_type": "SpecificTypeFromListAbove",
-              "confidence": 0.95,
-              "fields": {{ ... }}
-            }}
-            
-            IMPORTANT: Extract ONLY the values. Do not reproduce the standard form text or legal disclaimers.
-            """
+            prompt = self._build_classification_prompt(page_num)
             
             try:
-                # Use generate_content_async
                 from google.generativeai.types import HarmCategory, HarmBlockThreshold
                 
                 safety_settings = {
@@ -69,42 +93,9 @@ class GeminiService:
                 )
                 
                 text = response.text
-                # With JSON mode, response.text should be valid JSON directly
                 return json.loads(text)
             except Exception as e:
-                # Fallback for parsing if needed or handle other errors
-                if "finish_reason" in str(e) and "5" in str(e):
-                    # Recitation Error: Try fallback to just classify doc_type without extraction
-                    self.logger.warning(f"Recitation error on page {page_num}. Retrying with classification only.")
-                    try:
-                        fallback_prompt = """
-                        Classify this document image into one of the following types:
-                        Tax: Form1040, Form1065, Form1120S, W2, 1099-MISC, ScheduleC, K1
-                        Appraisal: Fannie1004, Freddie70, Desktop, DriveBy, URAR
-                        Credit: TriMerge, MergedInFile, Equifax, TransUnion, Experian
-                        Income: Paystub, PensionVerification, ProfitLoss, BankStatement
-                        Title/Escrow: ALTA_Commitment, Preliminary_Title, HUD1, ClosingDisclosure
-                        Loan: MortgageStatement, Note, BorrowerAuthorization
-                        Govt/Military: VA_Certificate, DD214, COE
-                        Misc: Continuation, CoverLetter, Illegible, Blank
-
-                        Output format (JSON only):
-                        {
-                          "doc_type": "SpecificTypeFromListAbove",
-                          "confidence": 0.95,
-                          "fields": {}
-                        }
-                        Do not extract any text content.
-                        """
-                        response = await self.model.generate_content_async(
-                            [fallback_prompt, {"mime_type": "image/png", "data": img_data}],
-                            safety_settings=safety_settings,
-                            generation_config={"response_mime_type": "application/json"}
-                        )
-                        return json.loads(response.text)
-                    except Exception as fallback_e:
-                         return {"error": f"Recitation Error (Blocked) and Fallback Failed: {str(fallback_e)}"}
-                
+                self.logger.error(f"Error processing page {page_num}: {e}")
                 return {"error": str(e)}
 
     async def process_document_async(self, file_content: bytes, filename: str = "document.pdf") -> ExtractionResult:
@@ -147,7 +138,6 @@ class GeminiService:
         if pages_data:
             total_confidence = sum(p.confidence for p in pages_data)
             avg_confidence = total_confidence / len(pages_data)
-            # Round to 2 decimal places
             avg_confidence = round(avg_confidence, 2)
         else:
             avg_confidence = 0.0

@@ -1,11 +1,12 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 import time
 import logging
 
 from app.services.gemini_service import GeminiService
+from app.services.training_service import TrainingService
 from app.schemas import ExtractionResult
 from app.utils.validation import validate_extraction
 from app.logging_config import setup_logging
@@ -40,7 +41,9 @@ app.add_middleware(LogRequestsMiddleware)
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-gemini_service = GeminiService()
+# Initialize Services
+training_service = TrainingService()
+gemini_service = GeminiService(training_service=training_service)
 
 @app.get("/")
 async def root():
@@ -63,6 +66,17 @@ async def process_document(file: UploadFile = File(...)):
         return result
     except Exception as e:
         logger.error(f"Processing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/admin/refresh-config")
+async def refresh_config():
+    """Refreshes the training configuration from the source."""
+    try:
+        training_service.refresh_config()
+        configs = training_service.get_all_configs()
+        return JSONResponse(content={"message": "Configuration refreshed", "active_configs": len(configs)})
+    except Exception as e:
+        logger.error(f"Failed to refresh config: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

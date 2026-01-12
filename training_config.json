@@ -1,0 +1,54 @@
+[
+  {
+    "doc_type": "CreditReport",
+    "description": "A detailed report of an individual's credit history.",
+    "keywords": [
+      "Credit Report",
+      "Credit Score",
+      "Equifax",
+      "TransUnion",
+      "Experian",
+      "Tradeline",
+      "Credit History",
+      "FICO"
+    ],
+    "anti_keywords": [
+      "Purchase Agreement",
+      "Tax Return",
+      "Invoice",
+      "Appraisal Report"
+    ],
+    "fields": {
+      "credit_score": "The primary credit score mentioned in the report (e.g., FICO score). Integer.",
+      "report_date": "The date the credit report was generated. Format YYYY-MM-DD.",
+      "borrower_name": "The full name of the person whose credit is reported.",
+      "total_debt": "The total amount of debt listed, if summarized. Float/Currency."
+    }
+  },
+  {
+    "doc_type": "PurchaseContract",
+    "description": "A legal contract for the purchase of real estate property.",
+    "keywords": [
+      "Purchase Agreement",
+      "Real Estate Purchase Contract",
+      "Sales Contract",
+      "Buyer",
+      "Seller",
+      "Purchase Price",
+      "Earnest Money"
+    ],
+    "anti_keywords": [
+      "Credit Report",
+      "Appraisal",
+      "Tax Return",
+      "Lease Agreement"
+    ],
+    "fields": {
+      "purchase_price": "The agreed upon price for the property. Float/Currency.",
+      "property_address": "The full address of the property being purchased.",
+      "closing_date": "The agreed upon closing date. Format YYYY-MM-DD.",
+      "buyer_name": "The full name(s) of the buyer(s).",
+      "seller_name": "The full name(s) of the seller(s)."
+    }
+  }
+]
