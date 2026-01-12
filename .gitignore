@@ -5,3 +5,6 @@ __pycache__/
 .DS_Store
 dummy_loan_package.pdf
 sampledoc
+
+# Security
+*.pem
