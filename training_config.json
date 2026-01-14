@@ -1,54 +1,118 @@
 [
   {
     "doc_type": "CreditReport",
-    "description": "A detailed report of an individual's credit history.",
+    "description": "A comprehensive extraction schema for credit reports based on standard bureau mapping requirements.",
     "keywords": [
       "Credit Report",
-      "Credit Score",
+      "Tradeline",
+      "FICO",
       "Equifax",
       "TransUnion",
       "Experian",
-      "Tradeline",
-      "Credit History",
-      "FICO"
-    ],
-    "anti_keywords": [
-      "Purchase Agreement",
-      "Tax Return",
-      "Invoice",
-      "Appraisal Report"
+      "Credit History"
     ],
     "fields": {
-      "credit_score": "The primary credit score mentioned in the report (e.g., FICO score). Integer.",
-      "report_date": "The date the credit report was generated. Format YYYY-MM-DD.",
-      "borrower_name": "The full name of the person whose credit is reported.",
-      "total_debt": "The total amount of debt listed, if summarized. Float/Currency."
+      "Report_Identification": {
+        "CreditReportReferenceNumber": "Unique reference number for the credit report",
+        "CreditAgencyName": "Name of the credit reporting agency or reseller",
+        "PreparedForName": "Entity for whom the report was prepared",
+        "CreditReportOrderedDate": "The date the credit report was originally ordered",
+        "OrderDate": "Specific date of the order transaction",
+        "CreditFreeze": "Indicator if a credit freeze is active"
+      },
+      "Borrower_Identity": {
+        "FirstName": "Legal first name of the borrower",
+        "MiddleName": "Legal middle name or initial",
+        "LastName": "Legal last name of the borrower",
+        "Suffix": "Name suffix such as Jr, Sr, or III",
+        "SSN": "Social Security Number of the borrower",
+        "DOB": "Date of birth of the borrower",
+        "AKA": "List of 'Also Known As' names (AKA1 through AKA20) found on file"
+      },
+      "Address_Information": {
+        "PresentAddressStreet": "Current residential street address",
+        "PresentAddressCity": "Current residential city",
+        "PresentAddressState": "Current residential state",
+        "PresentAddressZip": "Current residential postal code",
+        "AdditionalAddress": "Any secondary or previous addresses listed on the report"
+      },
+      "Bureau_Availability": {
+        "TransUnionAvailable": "Indicator if TransUnion data is present",
+        "ExperianAvailable": "Indicator if Experian data is present",
+        "EquifaxAvailable": "Indicator if Equifax data is present",
+        "TransUnionScore": "TransUnion credit score",
+        "ExperianScore": "Experian credit score",
+        "EquifaxScore": "Equifax credit score"
+      },
+      "Tradeline_Details": {
+        "description": "Granular data for individual credit accounts (tradelines)",
+        "fields": {
+          "CreditorName": "Name of the lending institution",
+          "AccountNumber": "Account number associated with the debt",
+          "Type": "The type of credit account (e.g., Revolving, Mortgage)",
+          "MonthlyPayment": "Scheduled monthly payment amount",
+          "UnpaidBalance": "The current outstanding balance",
+          "HighBalance": "The highest balance ever recorded on the account",
+          "Status": "Current status of the account (e.g., Paid, Current)",
+          "DateOpened": "Date the account was established",
+          "LastReportActivityDate": "Most recent date of activity or reporting",
+          "Late30": "Total count of 30-day delinquencies",
+          "Late60": "Total count of 60-day delinquencies",
+          "Late90": "Total count of 90-day delinquencies",
+          "TradelineRemark": "Specific remarks or codes on the tradeline"
+        }
+      },
+      "Summary_Totals": {
+        "TotalMonthlyPayment": "Sum of all monthly payments across tradelines",
+        "TotalUnpaidBalance": "Aggregate of all unpaid balances",
+        "TotalTradelineCount": "Total number of accounts reported",
+        "MortgageCount": "Total number of mortgage accounts"
+      },
+      "Derogatory_Summary": {
+        "PublicRecordCount": "Total count of public records",
+        "CollectionCount": "Total count of collection items",
+        "BankruptcyCount": "Total count of bankruptcy filings",
+        "ForeclosureCount": "Total count of foreclosure proceedings",
+        "ChargeOffCount": "Total count of charged-off accounts",
+        "InquiriesCount": "Total number of hard inquiries in the last 12-24 months"
+      }
     }
   },
   {
     "doc_type": "PurchaseContract",
-    "description": "A legal contract for the purchase of real estate property.",
+    "description": "Detailed extraction schema for residential purchase agreements focusing on financial terms and property types.",
     "keywords": [
       "Purchase Agreement",
-      "Real Estate Purchase Contract",
       "Sales Contract",
-      "Buyer",
-      "Seller",
-      "Purchase Price",
-      "Earnest Money"
-    ],
-    "anti_keywords": [
-      "Credit Report",
-      "Appraisal",
-      "Tax Return",
-      "Lease Agreement"
+      "Earnest Money",
+      "Seller Credit",
+      "Escrow"
     ],
     "fields": {
-      "purchase_price": "The agreed upon price for the property. Float/Currency.",
-      "property_address": "The full address of the property being purchased.",
-      "closing_date": "The agreed upon closing date. Format YYYY-MM-DD.",
-      "buyer_name": "The full name(s) of the buyer(s).",
-      "seller_name": "The full name(s) of the seller(s)."
+      "Contract_Basics": {
+        "ContractDate": "The date the contract was fully executed",
+        "OfferDate": "The date the initial offer was made",
+        "ClosingDate": "The scheduled date for ownership transfer"
+      },
+      "Financial_Terms": {
+        "PurchasePrice": "The total agreed sales price",
+        "EarnestMoneyAmount": "The deposit amount provided by the buyer",
+        "SellerPaidClosingCosts": "Amount of closing costs covered by the seller",
+        "SellerCredits": "Specific financial credits provided by the seller to the buyer"
+      },
+      "Property_Attributes": {
+        "PropertyAddress": "Full physical address of the property",
+        "IsCondominium": "Boolean/Indicator if the property is a condo",
+        "IsPUD": "Boolean/Indicator if property is in a Planned Unit Development",
+        "PropertyType": "General classification (Single Family, Multi-Family, etc.)"
+      },
+      "Parties_and_Agents": {
+        "BuyerName": "Full name of the purchaser(s)",
+        "SellerName": "Full name of the property owner(s)",
+        "ListingAgentName": "Name of the agent representing the seller",
+        "SellingAgentName": "Name of the agent representing the buyer",
+        "EscrowCompanyName": "The company handling the transaction funds"
+      }
     }
   }
 ]

@@ -35,18 +35,24 @@ class GeminiService:
         
         # Build the dynamic parts of the prompt
         classification_rules = []
+        extraction_schemas = []
+
         for config in configs:
             doc_type = config.get("doc_type")
             keywords = ", ".join(config.get("keywords", []))
             anti_keywords = ", ".join(config.get("anti_keywords", []))
+            fields_schema = json.dumps(config.get("fields", {}), indent=2)
+
             classification_rules.append(
-                f"- **{doc_type}**: Look for keywords: [{keywords}]. Ensure these are ABSENT: [{anti_keywords}]."
+                f"- **{doc_type}**: Look for keywords: [{keywords}]."
+            )
+            
+            extraction_schemas.append(
+                f"### {doc_type} Schema\n{fields_schema}"
             )
             
         rules_text = "\n".join(classification_rules)
-        
-        # Add standard types as fallback/simulated for now if needed, or just rely on the dynamic ones + "Unknown"
-        # For this demo, we can mix them or prioritize the dynamic ones.
+        schemas_text = "\n\n".join(extraction_schemas)
         
         prompt = f"""
         Analyze this document page (page {page_num}) and extract structured data.
@@ -57,16 +63,18 @@ class GeminiService:
         - **Other**: If the document does not match any of the above strict criteria.
         
         ### Extraction Rules
-        If the document matches one of the types above, extract the fields defined for it.
+        If the document matches one of the types above, extract the fields EXACTLY as defined in the following schemas. 
+        Do not look for fields that are not in the schema.
+        
+        {schemas_text}
         
         Output valid JSON only:
         {{
           "doc_type": "TheMatchedDocType",
           "confidence": 0.95,
           "fields": {{
-             // Extract fields relevant to the doc_type.
-             // For CreditReport: credit_score, report_date, borrower_name, total_debt
-             // For PurchaseContract: purchase_price, property_address, closing_date, buyer_name, seller_name
+             // Extract fields exactly matching the schema for the doc_type.
+             // Nested objects should be preserved.
           }}
         }}
         """

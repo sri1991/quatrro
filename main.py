@@ -36,7 +36,7 @@ class LogRequestsMiddleware(BaseHTTPMiddleware):
             logger.error(f"Request failed: {method} {url} duration={process_time:.4f}s error={str(e)}")
             raise e
 
-app.add_middleware(LogRequestsMiddleware)
+# app.add_middleware(LogRequestsMiddleware)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

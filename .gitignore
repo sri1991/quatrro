@@ -5,6 +5,9 @@ __pycache__/
 .DS_Store
 dummy_loan_package.pdf
 sampledoc
+backup_restored/
 
 # Security
 *.pem
+.git_corrupted
+venv
