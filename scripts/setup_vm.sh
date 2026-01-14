@@ -11,6 +11,14 @@ PROJECT_ROOT=$(pwd)
 
 echo "Setting up in $PROJECT_ROOT"
 
+# Check for .env file
+if [ ! -f ".env" ]; then
+    echo "ERROR: .env file is missing!"
+    echo "Please create a .env file in the project root with your GOOGLE_API_KEY."
+    echo "Example: echo 'GOOGLE_API_KEY=your_key' > .env"
+    exit 1
+fi
+
 # Create virtual environment
 if [ ! -d "venv" ]; then
     echo "Creating virtual environment..."

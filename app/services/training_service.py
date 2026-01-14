@@ -2,6 +2,9 @@ import json
 import logging
 import os
 from typing import List, Dict, Any, Optional
+import requests
+
+TRAINING_DATA_URL = "https://paramatrixstaging.theprismac.com/extraction/train_data.json"
 
 logger = logging.getLogger(__name__)
 
@@ -40,3 +43,18 @@ class TrainingService:
     def refresh_config(self):
         """Triggers a reload of the configuration."""
         self.load_config()
+
+    def refresh_from_url(self):
+        """
+        Fetches the configuration from the remote URL.
+        Falls back to local file on failure.
+        """
+        try:
+            logger.info(f"Fetching config from {TRAINING_DATA_URL}")
+            response = requests.get(TRAINING_DATA_URL, timeout=10)
+            response.raise_for_status()
+            self._configs = response.json()
+            logger.info(f"Successfully loaded {len(self._configs)} configs from remote URL")
+        except Exception as e:
+            logger.error(f"Failed to fetch config from URL: {e}. Falling back to local file.")
+            self.load_config()

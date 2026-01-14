@@ -107,6 +107,9 @@ class GeminiService:
                 return {"error": str(e)}
 
     async def process_document_async(self, file_content: bytes, filename: str = "document.pdf") -> ExtractionResult:
+        # Refresh configuration from URL (or fallback) before processing
+        self.training_service.refresh_from_url()
+
         start_time = time.time()
         self.logger.info(f"Starting processing for {filename}")
         
